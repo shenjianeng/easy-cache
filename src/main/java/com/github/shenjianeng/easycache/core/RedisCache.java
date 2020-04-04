@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisCache<K extends Serializable, V extends Serializable> implements Cache<K, V> {
 
     private static final int MAX_BATCH_KEY_SIZE = 20;
-    private static final String KNOWN_KEYS_NAME_SUFFIX = ":knownKeys:";
+    private static final String KNOWN_KEYS_NAME_SUFFIX = "$$knownKeys$$";
 
     private final String knownKeysName;
 
@@ -46,7 +46,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     private final MultiCacheLoader<K, V> multiCacheLoader;
 
     @Nullable
-    private final RedisKeyGenerator<K, String> keyGenerator;
+    private final RedisKeyGenerator<K> keyGenerator;
 
 
     public RedisCache(String keyPrefix, RedisTemplate<String, Serializable> redisTemplate,
@@ -57,7 +57,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
     public RedisCache(String keyPrefix, RedisTemplate<String, Serializable> redisTemplate,
                       Duration timeToLive, MultiCacheLoader<K, V> multiCacheLoader,
-                      RedisKeyGenerator<K, String> keyGenerator) {
+                      RedisKeyGenerator<K> keyGenerator) {
 
         this.redisTemplate = Objects.requireNonNull(redisTemplate);
         this.timeToLive = Objects.requireNonNull(timeToLive);
@@ -231,13 +231,13 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     }
 
     @FunctionalInterface
-    interface RedisKeyGenerator<K, String> {
+    interface RedisKeyGenerator<K> {
         @NotNull
         String generate(@NotNull K key);
     }
 
 
-    public static class DefaultRedisKeyGenerator<K> implements RedisKeyGenerator<K, String> {
+    public static class DefaultRedisKeyGenerator<K> implements RedisKeyGenerator<K> {
 
         public static final DefaultRedisKeyGenerator INSTANCE = new DefaultRedisKeyGenerator<>();
 

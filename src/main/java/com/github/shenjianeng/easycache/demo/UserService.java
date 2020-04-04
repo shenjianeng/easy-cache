@@ -20,10 +20,9 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
+    public Cache<Integer, User> userCache;
     @Autowired
     private RedisTemplate<String, Serializable> redisTemplate;
-
-    public Cache<Integer, User> userCache;
 
     @PostConstruct
     public void init() {

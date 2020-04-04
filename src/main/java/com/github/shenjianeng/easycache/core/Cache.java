@@ -12,7 +12,7 @@ import java.util.Map;
 public interface Cache<K, V> {
 
     /**
-     * 根据 key 缓存中获取,缓存中不存在,则返回null
+     * 根据 keys 缓存中获取,缓存中不存在,则返回null
      */
     @NonNull
     Map<K, V> getIfPresent(@NonNull Iterable<K> keys);
@@ -36,13 +36,28 @@ public interface Cache<K, V> {
     @Nullable
     V getOrLoadIfAbsent(@NonNull K key);
 
+    /**
+     * 加入缓存中
+     */
     void put(@NonNull K key, V value);
 
+    /**
+     * 加入缓存中
+     */
     void put(@NonNull Map<K, V> map);
 
+    /**
+     * 根据 key 清除缓存
+     */
     void evict(@NonNull K key);
 
+    /**
+     * 根据 keys 清除缓存
+     */
     void evict(@NonNull Iterable<K> keys);
 
+    /**
+     * 清除所有缓存
+     */
     void evictAll();
 }
