@@ -12,7 +12,6 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
@@ -34,8 +33,11 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     private static final int MAX_BATCH_KEY_SIZE = 20;
     private static final int RANDOM_BOUND = 60;
     private static final String KNOWN_KEYS_NAME_SUFFIX = "$$knownKeys$$";
+    private static final String SEPARATOR = ":";
 
     private final String knownKeysName;
+
+    private final byte[] knownKeysNameBytes;
 
     private final RedisTemplate<String, Serializable> redisTemplate;
 
@@ -64,6 +66,8 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         this.multiCacheLoader = Objects.requireNonNull(multiCacheLoader);
         this.keyGenerator = Objects.requireNonNull(keyGenerator);
         this.knownKeysName = keyPrefix + KNOWN_KEYS_NAME_SUFFIX;
+        RedisSerializer<String> keySerializer = (RedisSerializer<String>) redisTemplate.getKeySerializer();
+        this.knownKeysNameBytes = keySerializer.serialize(knownKeysName);
 
     }
 
@@ -104,8 +108,6 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     public void put(@NonNull Map<K, V> map) {
         RedisSerializer<Serializable> keySerializer = (RedisSerializer<Serializable>) redisTemplate.getKeySerializer();
         RedisSerializer<Serializable> valueSerializer = (RedisSerializer<Serializable>) redisTemplate.getValueSerializer();
-
-        byte[] knownKeysNameBytes = keySerializer.serialize(knownKeysName);
 
         redisTemplate.executePipelined(new RedisCallback<Object>() {
             @Override
@@ -214,9 +216,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
 
     private String buildCacheKey(K key) {
-        String cacheKey = keyPrefix + ":" + keyGenerator.generate(key);
-        Assert.isTrue(!knownKeysName.equals(key), "illegal argument : " + key);
-        return cacheKey;
+        return keyPrefix + SEPARATOR + keyGenerator.generate(key);
     }
 
 
