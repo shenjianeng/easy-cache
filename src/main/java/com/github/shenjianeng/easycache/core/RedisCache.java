@@ -3,7 +3,8 @@ package com.github.shenjianeng.easycache.core;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.sun.istack.internal.NotNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisStringCommands;
@@ -11,8 +12,6 @@ import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -45,7 +44,6 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
     private final MultiCacheLoader<K, V> multiCacheLoader;
 
-    @Nullable
     private final RedisKeyGenerator<K> keyGenerator;
 
 
@@ -130,14 +128,14 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     }
 
     @Override
-    public void evict(K key) {
+    public void evict(@NonNull K key) {
         String cacheKey = buildCacheKey(key);
         redisTemplate.delete(cacheKey);
         redisTemplate.opsForZSet().remove(knownKeysName, cacheKey);
     }
 
     @Override
-    public void evict(Iterable<K> keys) {
+    public void evict(@NonNull Iterable<K> keys) {
         List<String> cacheKeyList = buildCacheKey(keys);
 
         redisTemplate.delete(cacheKeyList);
@@ -232,8 +230,8 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
     @FunctionalInterface
     interface RedisKeyGenerator<K> {
-        @NotNull
-        String generate(@NotNull K key);
+        @NonNull
+        String generate(@NonNull K key);
     }
 
 
@@ -245,8 +243,8 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         }
 
         @Override
-        @NotNull
-        public String generate(@NotNull K key) {
+        @NonNull
+        public String generate(@NonNull K key) {
             return key.toString();
         }
     }

@@ -1,7 +1,7 @@
 package com.github.shenjianeng.easycache.core;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
 

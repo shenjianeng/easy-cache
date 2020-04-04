@@ -9,7 +9,6 @@ import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.io.Serializable;
-import java.net.UnknownHostException;
 
 @SpringBootApplication
 public class EasyCacheApplication {
@@ -20,7 +19,7 @@ public class EasyCacheApplication {
 
 
     @Bean
-    public RedisTemplate<String, Serializable> redisTemplate(RedisConnectionFactory redisConnectionFactory) throws UnknownHostException {
+    public RedisTemplate<String, Serializable> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Serializable> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
         template.setKeySerializer(new StringRedisSerializer());
