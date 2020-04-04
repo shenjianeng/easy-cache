@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisCache<K extends Serializable, V extends Serializable> implements Cache<K, V> {
 
     private static final int MAX_BATCH_KEY_SIZE = 20;
+    private static final int RANDOM_BOUND = 60;
     private static final String KNOWN_KEYS_NAME_SUFFIX = "$$knownKeys$$";
 
     private final String knownKeysName;
@@ -114,14 +115,14 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
                         // todo support null value
                         String cacheKey = buildCacheKey(k);
                         connection.set(keySerializer.serialize(cacheKey), valueSerializer.serialize(v),
-                                Expiration.from(timeToLive.getSeconds() + ThreadLocalRandom.current().nextInt(60), TimeUnit.SECONDS),
+                                Expiration.from(timeToLive.getSeconds() + ThreadLocalRandom.current().nextInt(RANDOM_BOUND), TimeUnit.SECONDS),
                                 RedisStringCommands.SetOption.UPSERT);
                         // maintain KnownKeys
                         connection.zAdd(knownKeysNameBytes, 0, valueSerializer.serialize(cacheKey));
                     }
                 });
 
-                connection.expire(knownKeysNameBytes, timeToLive.getSeconds());
+                connection.expire(knownKeysNameBytes, timeToLive.getSeconds() + RANDOM_BOUND);
                 return null;
             }
         });
