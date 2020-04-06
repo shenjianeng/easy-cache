@@ -182,9 +182,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         for (List<String> partition : partitions) {
             // Get multiple keys. Values are returned in the order of the requested keys.
             List<V> values = (List<V>) redisTemplate.opsForValue().multiGet(partition);
-            if (!CollectionUtils.isEmpty(values)) {
-                valueList.addAll(values);
-            }
+            valueList.addAll(values);
         }
 
         List<K> keysList = Lists.newArrayList(keys);
