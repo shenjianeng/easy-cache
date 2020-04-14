@@ -3,6 +3,7 @@ package com.github.shenjianeng.easycache.core;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.dao.DataAccessException;
@@ -186,7 +187,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         }
 
         List<K> keysList = Lists.newArrayList(keys);
-        List<K> missedKeyList = Lists.newArrayList();
+        Set<K> missedKeys = Sets.newLinkedHashSet();
 
         Map<K, V> map = Maps.newHashMapWithExpectedSize(partitions.size());
 
@@ -197,12 +198,12 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
             if (v != null) {
                 map.put(k, v);
             } else {
-                missedKeyList.add(k);
+                missedKeys.add(k);
             }
         }
 
-        if (loadIfAbsent) {
-            Map<K, V> missValueMap = multiCacheLoader.loadCache(missedKeyList);
+        if (loadIfAbsent && !CollectionUtils.isEmpty(missedKeys)) {
+            Map<K, V> missValueMap = multiCacheLoader.loadCache(missedKeys);
 
             put(missValueMap);
 
