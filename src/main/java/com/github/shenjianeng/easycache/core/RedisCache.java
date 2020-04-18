@@ -101,7 +101,10 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
     @Override
     public void put(@NonNull K key, V value) {
-        put(ImmutableMap.of(key, value));
+        if (value != null) {
+            // todo support null value
+            put(ImmutableMap.of(key, value));
+        }
     }
 
 
