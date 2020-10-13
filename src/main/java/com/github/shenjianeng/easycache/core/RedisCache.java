@@ -50,16 +50,27 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
 
     private final RedisKeyGenerator<K> keyGenerator;
 
+    /**
+     * 是否需要维护已知的key
+     */
+    private final boolean maintainKnownKeys;
+
 
     public RedisCache(String keyPrefix, RedisTemplate<String, Serializable> redisTemplate,
                       Duration timeToLive, MultiCacheLoader<K, V> multiCacheLoader) {
 
-        this(keyPrefix, redisTemplate, timeToLive, multiCacheLoader, DefaultRedisKeyGenerator.INSTANCE);
+        this(keyPrefix, redisTemplate, timeToLive, multiCacheLoader, true);
+    }
+
+    public RedisCache(String keyPrefix, RedisTemplate<String, Serializable> redisTemplate,
+                      Duration timeToLive, MultiCacheLoader<K, V> multiCacheLoader, boolean maintainKnownKeys) {
+
+        this(keyPrefix, redisTemplate, timeToLive, multiCacheLoader, DefaultRedisKeyGenerator.INSTANCE, maintainKnownKeys);
     }
 
     public RedisCache(String keyPrefix, RedisTemplate<String, Serializable> redisTemplate,
                       Duration timeToLive, MultiCacheLoader<K, V> multiCacheLoader,
-                      RedisKeyGenerator<K> keyGenerator) {
+                      RedisKeyGenerator<K> keyGenerator, boolean maintainKnownKeys) {
 
         this.redisTemplate = Objects.requireNonNull(redisTemplate);
         this.timeToLive = Objects.requireNonNull(timeToLive);
@@ -69,6 +80,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         this.knownKeysName = keyPrefix + KNOWN_KEYS_NAME_SUFFIX;
         RedisSerializer<String> keySerializer = (RedisSerializer<String>) redisTemplate.getKeySerializer();
         this.knownKeysNameBytes = keySerializer.serialize(knownKeysName);
+        this.maintainKnownKeys = maintainKnownKeys;
 
     }
 
@@ -123,12 +135,15 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
                         connection.set(keySerializer.serialize(cacheKey), valueSerializer.serialize(v),
                                 Expiration.from(timeToLive.getSeconds() + ThreadLocalRandom.current().nextInt(RANDOM_BOUND), TimeUnit.SECONDS),
                                 RedisStringCommands.SetOption.UPSERT);
-                        // maintain KnownKeys
-                        connection.zAdd(knownKeysNameBytes, 0, valueSerializer.serialize(cacheKey));
+                        if (maintainKnownKeys) {
+                            connection.zAdd(knownKeysNameBytes, 0, valueSerializer.serialize(cacheKey));
+                        }
                     }
                 });
 
-                connection.expire(knownKeysNameBytes, timeToLive.getSeconds() + RANDOM_BOUND);
+                if (maintainKnownKeys) {
+                    connection.expire(knownKeysNameBytes, timeToLive.getSeconds() + RANDOM_BOUND);
+                }
                 return null;
             }
         });
@@ -138,7 +153,10 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     public void evict(@NonNull K key) {
         String cacheKey = buildCacheKey(key);
         redisTemplate.delete(cacheKey);
-        redisTemplate.opsForZSet().remove(knownKeysName, cacheKey);
+        if (maintainKnownKeys) {
+            redisTemplate.opsForZSet().remove(knownKeysName, cacheKey);
+        }
+
     }
 
     @Override
@@ -146,12 +164,17 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
         List<String> cacheKeyList = buildCacheKey(keys);
 
         redisTemplate.delete(cacheKeyList);
-        redisTemplate.opsForZSet().remove(knownKeysName, cacheKeyList);
-
+        if (maintainKnownKeys) {
+            redisTemplate.opsForZSet().remove(knownKeysName, cacheKeyList);
+        }
     }
 
     @Override
     public void evictAll() {
+        if (!maintainKnownKeys) {
+            throw new UnsupportedOperationException("evictAll 操作需要将 maintainKnownKeys 设置为 true");
+        }
+
         Set<Serializable> serializables = redisTemplate.opsForZSet().rangeByScore(knownKeysName, 0, 0);
 
         if (!CollectionUtils.isEmpty(serializables)) {
@@ -162,7 +185,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
                 }
             });
             redisTemplate.delete(cacheKeys);
-            redisTemplate.opsForZSet().remove(knownKeysName, cacheKeys);
+            redisTemplate.delete(knownKeysName);
         }
     }
 
@@ -205,7 +228,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
             }
         }
 
-        if (loadIfAbsent && !CollectionUtils.isEmpty(missedKeys)) {
+        if (loadIfAbsent && !missedKeys.isEmpty()) {
             Map<K, V> missValueMap = multiCacheLoader.loadCache(missedKeys);
 
             put(missValueMap);
