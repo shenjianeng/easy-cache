@@ -255,7 +255,7 @@ public class RedisCache<K extends Serializable, V extends Serializable> implemen
     }
 
     @FunctionalInterface
-    interface RedisKeyGenerator<K> {
+    public interface RedisKeyGenerator<K> {
         @NonNull
         String generate(@NonNull K key);
     }
